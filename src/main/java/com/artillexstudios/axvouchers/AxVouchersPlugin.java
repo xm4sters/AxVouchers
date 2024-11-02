@@ -41,7 +41,6 @@ public class AxVouchersPlugin extends AxPlugin {
     @Override
     public void updateFlags() {
         FeatureFlags.PACKET_ENTITY_TRACKER_ENABLED.set(true);
-        FeatureFlags.DEBUG.set(true);
     }
 
     @Override
@@ -89,7 +88,7 @@ public class AxVouchersPlugin extends AxPlugin {
         Library sqLite = Library.builder()
                 .groupId("org.xerial")
                 .artifactId("sqlite-jdbc")
-                .version("3.42.0.0")
+                .version("3.46.0.0")
                 .relocate("org{}sqlite", "com.artillexstudios.axvouchers.libs.sqlite")
                 .build();
 

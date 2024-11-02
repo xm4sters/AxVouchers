@@ -33,7 +33,7 @@ public class VoucherUseListener implements Listener {
     private static final UUID NIL_UUID = new UUID(0, 0);
     private static final Logger log = LoggerFactory.getLogger(VoucherUseListener.class);
     private static final HashMap<UUID, String> CONFIRM = new HashMap<>();
-    private static final Cooldown<UUID> COOLDOWN = new Cooldown<>();
+    private static final Cooldown<String> COOLDOWN = new Cooldown<>();
     private static final Cooldown<UUID> SHORT_COOLDOWN = new Cooldown<>();
 
     public static void clear(Player player) {
@@ -89,7 +89,7 @@ public class VoucherUseListener implements Listener {
             return;
         }
 
-        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId());
+        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId() + "-" + voucher.getId());
         if (remaining > 0) {
             event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remaining))));
             return;
@@ -143,7 +143,7 @@ public class VoucherUseListener implements Listener {
             });
 
             SHORT_COOLDOWN.addCooldown(event.getPlayer().getUniqueId(), 250);
-            COOLDOWN.addCooldown(event.getPlayer().getUniqueId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
+            COOLDOWN.addCooldown(event.getPlayer().getUniqueId() + "-" + voucher.getId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
             item.setAmount(item.getAmount() - 1);
             voucher.doUse(event.getPlayer(), tag);
         }
@@ -168,7 +168,7 @@ public class VoucherUseListener implements Listener {
             return;
         }
 
-        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId());
+        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId() + "-" + voucher.getId());
         if (remaining > 0) {
             event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remaining))));
             return;
@@ -219,7 +219,7 @@ public class VoucherUseListener implements Listener {
             });
 
             SHORT_COOLDOWN.addCooldown(event.getPlayer().getUniqueId(), 250);
-            COOLDOWN.addCooldown(event.getPlayer().getUniqueId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
+            COOLDOWN.addCooldown(event.getPlayer().getUniqueId() + "-" + voucher.getId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
             item.setAmount(item.getAmount() - 1);
             voucher.doUse(event.getPlayer(), tag);
         }

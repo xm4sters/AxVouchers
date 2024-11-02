@@ -16,12 +16,12 @@ repositories {
 }
 
 dependencies {
-    implementation("com.artillexstudios.axapi:axapi:1.4.276:all")
+    implementation("com.artillexstudios.axapi:axapi:1.4.338:all")
     implementation("dev.jorel:commandapi-bukkit-shade:9.5.0")
     compileOnly("com.zaxxer:HikariCP:5.0.1")
     compileOnly("dev.triumphteam:triumph-gui:3.1.7")
-    compileOnly("com.h2database:h2:2.2.220")
-    compileOnly("org.xerial:sqlite-jdbc:3.42.0.0")
+    compileOnly("com.h2database:h2:2.3.230")
+    compileOnly("org.xerial:sqlite-jdbc:3.46.0.0")
     compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
     compileOnly("org.slf4j:slf4j-api:2.0.9")
     compileOnly("commons-io:commons-io:2.15.0")

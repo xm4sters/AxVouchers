@@ -85,6 +85,9 @@ public class Voucher {
 
         stackable = section.getBoolean("stackable", stackable);
         consume = section.getBoolean("consume", consume);
+        if (consume) {
+            itemStack.setType(Material.GOLDEN_APPLE);
+        }
 
         actions.clear();
         section.getOptionalStringList("actions").ifPresent(this.actions::addAll);

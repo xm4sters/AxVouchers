@@ -4,6 +4,7 @@ import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.items.component.DataComponents;
 import com.artillexstudios.axapi.utils.ContainerUtils;
 import com.artillexstudios.axapi.utils.StringUtils;
+import com.artillexstudios.axvouchers.AxVouchersPlugin;
 import com.artillexstudios.axvouchers.command.argument.Arguments;
 import com.artillexstudios.axvouchers.config.Config;
 import com.artillexstudios.axvouchers.config.Messages;
@@ -12,6 +13,7 @@ import com.artillexstudios.axvouchers.gui.VoucherLogGUI;
 import com.artillexstudios.axvouchers.utils.FileUtils;
 import com.artillexstudios.axvouchers.voucher.Voucher;
 import com.artillexstudios.axvouchers.voucher.Vouchers;
+import com.zaxxer.hikari.HikariDataSource;
 import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIBukkitConfig;
 import dev.jorel.commandapi.CommandTree;
@@ -31,9 +33,19 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 
 public enum VoucherCommand {
     INSTANCE;
@@ -125,6 +137,121 @@ public enum VoucherCommand {
                             Player sender = context.sender();
 
                             VoucherGUI.INSTANCE.open(sender);
+                        })
+                )
+                .then(new LiteralArgument("perf")
+                        .executes((sender, args) -> {
+                            Connection[] conn = new Connection[10];
+                            ExecutorService service = Executors.newFixedThreadPool(5);
+                            try {
+                                Class.forName("org.sqlite.JDBC");
+                                conn[0] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[1] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[2] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[3] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[4] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[5] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[6] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[7] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[8] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                                conn[9] = DriverManager.getConnection(String.format("jdbc:sqlite:%s/data4.db", AxVouchersPlugin.getInstance().getDataFolder()));
+                            } catch (Exception ex) {
+                                throw new RuntimeException(ex);
+                            }
+
+                            try (PreparedStatement statement = conn[0].prepareStatement("PRAGMA journal_mode=WAL;")) {
+                                statement.executeQuery();
+                            } catch (Exception exception) {
+                                exception.printStackTrace();
+                            }
+
+                            try (PreparedStatement statement = conn[0].prepareStatement("PRAGMA synchronous = normal;")) {
+                                statement.executeUpdate();
+                            } catch (Exception exception) {
+                                exception.printStackTrace();
+                            }
+
+                            try (PreparedStatement statement = conn[0].prepareStatement("PRAGMA page_size = 32768;")) {
+                                statement.executeUpdate();
+                            } catch (Exception exception) {
+                                exception.printStackTrace();
+                            }
+
+                            try (PreparedStatement statement = conn[0].prepareStatement("PRAGMA mmap_size = 30000000000;")) {
+                                statement.executeQuery();
+                            } catch (Exception exception) {
+                                exception.printStackTrace();
+                            }
+
+                            final String CREATE_TABLE = "CREATE TABLE IF NOT EXISTS test (abc VARCHAR(36) NOT NULL,a41 VARCHAR(36) NOT NULL, num INT NOT NULL, a53 VARCHAR(36) NOT NULL,a5315bc VARCHAR(36) NOT NULL,a11bc VARCHAR(36) NOT NULL);";
+
+                            try (PreparedStatement stmt = conn[0].prepareStatement(CREATE_TABLE)) {
+                                stmt.executeUpdate();
+                            } catch (SQLException exception) {
+                                exception.printStackTrace();
+                            }
+
+                            long time = System.currentTimeMillis();
+
+                            ArrayList<CompletableFuture<Void>> futures = new ArrayList<>(100000);
+                            for (int i = 0; i < 100000; i++) {
+                                final int finalI = i;
+                                CompletableFuture<Void> future = new CompletableFuture<>();
+                                service.submit(() -> {
+                                    try (PreparedStatement stmt = conn[ThreadLocalRandom.current().nextInt(conn.length)].prepareStatement("INSERT INTO test (abc, a41, num, a53, a5315bc, a11bc) VALUES (?,?,?,?,?,?);")){
+                                        stmt.setString(1, UUID.randomUUID().toString());
+                                        stmt.setString(2, UUID.randomUUID().toString());
+                                        stmt.setInt(3, finalI);
+                                        stmt.setString(4, UUID.randomUUID().toString());
+                                        stmt.setString(5, UUID.randomUUID().toString());
+                                        UUID last = UUID.randomUUID();
+                                        stmt.setString(6, last.toString());
+                                        stmt.executeUpdate();
+                                        future.complete(null);
+                                    } catch (Exception ex) {
+                                        ex.printStackTrace();
+                                    }
+                                });
+                                futures.add(future);
+                            }
+
+                            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenRun(() -> {
+                                System.out.println("insert: " + (System.currentTimeMillis() - time));
+
+                                long time2 = System.currentTimeMillis();
+                                try (PreparedStatement stmt = conn[0].prepareStatement("SELECT * FROM test;")){
+                                    stmt.executeQuery().close();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                                System.out.println("find all: " + (System.currentTimeMillis() - time2));
+
+//                            long time3 = System.currentTimeMillis();
+//                            try (PreparedStatement stmt = conn.prepareStatement("SELECT * FROM test WHERE a11bc = ?;")){
+//                                stmt.setObject(1, last);
+//                                stmt.executeQuery().close();
+//                            } catch (Exception ex) {
+//                                ex.printStackTrace();
+//                            }
+//                            System.out.println("find (last uuid): " + (System.currentTimeMillis() - time3));
+
+                                long time4 = System.currentTimeMillis();
+                                try (PreparedStatement stmt = conn[0].prepareStatement("SELECT * FROM test WHERE a11bc = ?;")){
+                                    stmt.setObject(1, UUID.randomUUID());
+                                    stmt.executeQuery().close();
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                                System.out.println("find (new uuid): " + (System.currentTimeMillis() - time4));
+
+                                try {
+                                    for (Connection connection : conn) {
+                                        connection.close();
+                                    }
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
                         })
                 )
                 .register();

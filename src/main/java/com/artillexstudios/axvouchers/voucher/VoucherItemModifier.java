@@ -133,7 +133,7 @@ public class VoucherItemModifier implements PacketItemModifierListener {
         WrappedItemStack wrapped = WrappedItemStack.wrap(previous);
         ItemLore lore = wrapped.get(DataComponents.lore());
         stack.set(DataComponents.lore(), lore);
-        stack.set(DataComponents.customName(), Component.empty());
+        stack.set(DataComponents.customName(), null);
         tag.remove("axvouchers-previous-state");
         stack.set(DataComponents.customData(), tag);
     }
