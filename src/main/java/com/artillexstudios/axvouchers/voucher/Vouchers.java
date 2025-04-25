@@ -3,12 +3,11 @@ package com.artillexstudios.axvouchers.voucher;
 import com.artillexstudios.axapi.items.nbt.CompoundTag;
 import com.artillexstudios.axapi.utils.Pair;
 import com.artillexstudios.axapi.utils.YamlUtils;
+import com.artillexstudios.axapi.utils.logging.LogUtils;
 import com.artillexstudios.axvouchers.config.Config;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,7 +22,6 @@ import java.util.regex.Pattern;
 public class Vouchers {
     private static final ConcurrentHashMap<String, Voucher> VOUCHERS = new ConcurrentHashMap<>();
     private static final List<String> placeholders = new ArrayList<>();
-    private static final Logger log = LoggerFactory.getLogger(Vouchers.class);
     private static final File VOUCHERS_DIRECTORY = com.artillexstudios.axvouchers.utils.FileUtils.PLUGIN_DIRECTORY.resolve("vouchers/").toFile();
     private static final List<File> FAILED_TO_LOAD = new ArrayList<>();
     private static final Pattern SEMICOLON = Pattern.compile(";");
@@ -31,22 +29,22 @@ public class Vouchers {
 
     public static void register(Voucher voucher) {
         if (VOUCHERS.containsKey(voucher.getId())) {
-            log.warn("A voucher with id {} is already registered! Skipping!", voucher.getId());
+            LogUtils.warn("A voucher with id {} is already registered! Skipping!", voucher.getId());
             return;
         }
 
         VOUCHERS.put(voucher.getId(), voucher);
 
-        if (Config.DEBUG) {
-            log.info("Loaded voucher with id {}! Vouchers: {}.", voucher.getId(), VOUCHERS);
+        if (Config.debug) {
+            LogUtils.info("Loaded voucher with id {}! Vouchers: {}.", voucher.getId(), VOUCHERS);
         }
     }
 
     public static void deregister(Voucher voucher) {
         VOUCHERS.remove(voucher.getId());
 
-        if (Config.DEBUG) {
-            log.info("Deregistered voucher {}! Vouchers: {}.", voucher.getId(), VOUCHERS);
+        if (Config.debug) {
+            LogUtils.info("Deregistered voucher {}! Vouchers: {}.", voucher.getId(), VOUCHERS);
         }
     }
 
@@ -63,8 +61,8 @@ public class Vouchers {
     }
 
     public static void loadAll() {
-        if (Config.DEBUG) {
-            log.info("Clearing all vouchers and failed to loads!");
+        if (Config.debug) {
+            LogUtils.info("Clearing all vouchers and failed to loads!");
         }
 
         FAILED_TO_LOAD.clear();
@@ -76,8 +74,8 @@ public class Vouchers {
 
         Collection<File> files = FileUtils.listFiles(VOUCHERS_DIRECTORY, new String[]{"yaml", "yml"}, true);
 
-        if (Config.DEBUG) {
-            log.info("Parsing voucher files: {}!", String.join(", ", files.stream().map(File::getName).toList()));
+        if (Config.debug) {
+            LogUtils.info("Parsing voucher files: {}!", String.join(", ", files.stream().map(File::getName).toList()));
         }
 
         for (File file : files) {
@@ -114,8 +112,8 @@ public class Vouchers {
     public static UUID getUUID(CompoundTag tag) {
         UUID uuid = tag.getUUID("axvouchers-uuid");
 
-        if (Config.DEBUG) {
-            log.info("Getting uuid from item! UUID: {}!", uuid == null ? "---" : uuid.toString());
+        if (Config.debug) {
+            LogUtils.info("Getting uuid from item! UUID: {}!", uuid == null ? "---" : uuid.toString());
         }
 
         return uuid;
@@ -169,16 +167,16 @@ public class Vouchers {
     }
 
     public static Voucher fromItem(CompoundTag tag) {
-        if (!tag.contains("axvouchers-id")) {
-            if (Config.DEBUG) {
-                log.info("Tag does not contain axvouchers-id!");
+        String voucherId = tag.getString("axvouchers-id");
+        if (voucherId == null) {
+            if (Config.debug) {
+                LogUtils.info("Tag does not contain axvouchers-id!");
             }
             return null;
         }
 
-        String voucherId = tag.getString("axvouchers-id");
-        if (Config.DEBUG) {
-            log.info("Parsing from id {}!", voucherId);
+        if (Config.debug) {
+            LogUtils.info("Parsing from id {}!", voucherId);
         }
         return parse(voucherId);
     }

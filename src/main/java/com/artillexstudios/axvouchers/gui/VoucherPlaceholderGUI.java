@@ -13,7 +13,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -33,7 +32,7 @@ public class VoucherPlaceholderGUI {
         this.voucher = voucher;
 
         for (String placeholder : voucher.placeholders()) {
-            valuesMap.put(placeholder, "");
+            this.valuesMap.put(placeholder, "");
         }
     }
 
@@ -46,54 +45,56 @@ public class VoucherPlaceholderGUI {
 
         new GuiFiller(placeholderSelector).fillBorder(new GuiItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)));
 
-        for (String placeholder : voucher.placeholders()) {
-            placeholderSelector.addItem(new GuiItem(new ItemBuilder(Material.OAK_SIGN).setName("<yellow>" + placeholder).setLore(List.of("", " <gray>- <white><value>", "<yellow>Click to edit!"), Placeholder.unparsed("value", valuesMap.getOrDefault(placeholder, ""))).get(), event -> {
+        for (String placeholder : this.voucher.placeholders()) {
+            placeholderSelector.addItem(new GuiItem(new ItemBuilder(Material.OAK_SIGN).setName("<yellow>" + placeholder).setLore(List.of("", " <gray>- <white><value>", "<yellow>Click to edit!"), Placeholder.unparsed("value", this.valuesMap.getOrDefault(placeholder, ""))).get(), event -> {
                 SignInput input = new SignInput.Builder()
                         .setLines(List.of(Component.empty(), Component.text("^^^^^^^^").color(NamedTextColor.WHITE), Component.text("Enter a new value for " + placeholder).color(NamedTextColor.WHITE), Component.empty()).toArray(new Component[0]))
-                        .setHandler(((player, components) -> {
-                            valuesMap.put(placeholder, PlainTextComponentSerializer.plainText().serialize(components[0]));
+                        .setHandler(((player, lines) -> {
+                            this.valuesMap.put(placeholder, lines[0]);
 
                             Scheduler.get().run(task -> {
                                 open();
                             });
                         }))
-                        .build(sender);
+                        .build(this.sender);
 
                 input.open();
             }));
         }
 
-        placeholderSelector.setItem(43, new GuiItem(new ItemBuilder(Material.ANVIL).setName("<#00FF00>Amount selector").setLore(List.of("", "<#00ff00>Currently selected: <amount>"), Placeholder.unparsed("amount", String.valueOf(amount))).get(), event -> {
+        placeholderSelector.setItem(43, new GuiItem(new ItemBuilder(Material.ANVIL).setName("<#00FF00>Amount selector").setLore(List.of("", "<#00ff00>Currently selected: <amount>"), Placeholder.unparsed("amount", String.valueOf(this.amount))).get(), event -> {
             SignInput input = new SignInput.Builder()
                     .setLines(List.of(Component.empty(), Component.text("^^^^^^^^").color(NamedTextColor.WHITE), Component.text("Enter the new amount").color(NamedTextColor.WHITE), Component.empty()).toArray(new Component[0]))
-                    .setHandler(((player, components) -> {
+                    .setHandler(((player, lines) -> {
                         try {
-                            amount = Integer.parseInt(PlainTextComponentSerializer.plainText().serialize(components[0]));
+                            this.amount = Integer.parseInt(lines[0]);
                         } catch (NumberFormatException exception) {
-                            amount = 1;
+                            this.amount = 1;
                         }
 
                         Scheduler.get().run(task -> {
-                            open();
+                            this.open();
                         });
                     }))
-                    .build(sender);
+                    .build(this.sender);
 
             input.open();
         }));
 
         placeholderSelector.setItem(44, new GuiItem(new ItemBuilder(Material.LIME_CONCRETE).setName("<#00FF00>Accept").get(), event -> {
-            for (Map.Entry<String, String> entry : valuesMap.entrySet()) {
+            for (Map.Entry<String, String> entry : this.valuesMap.entrySet()) {
                 if (entry.getValue().isEmpty()) {
-                    sender.sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.PLACEHOLDERS_NOT_SET, Placeholder.unparsed("placeholders", entry.getKey())));
-                    open();
+                    this.sender.sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.PLACEHOLDERS_NOT_SET, Placeholder.unparsed("placeholders", entry.getKey())));
+                    this.open();
                     return;
                 }
             }
 
-            sender.getInventory().addItem(voucher.getItemStack(amount, valuesMap));
+            this.voucher.getItemStack(this.amount, this.valuesMap).thenAccept(item -> {
+                this.sender.getInventory().addItem(item);
+            });
         }));
 
-        placeholderSelector.open(sender);
+        placeholderSelector.open(this.sender);
     }
 }

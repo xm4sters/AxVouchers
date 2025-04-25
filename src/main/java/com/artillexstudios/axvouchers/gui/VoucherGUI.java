@@ -54,7 +54,9 @@ public enum VoucherGUI {
 
             gui.addItem(new GuiItem(builder.get(), event -> {
                 if (voucher.placeholders().isEmpty()) {
-                    ContainerUtils.INSTANCE.addOrDrop(sender.getInventory(), List.of(voucher.getItemStack(1, null)), sender.getLocation());
+                    voucher.getItemStack(1, null).thenAccept(item -> {
+                        ContainerUtils.INSTANCE.addOrDrop(sender.getInventory(), List.of(item), sender.getLocation());
+                    });
                 } else {
                     new VoucherPlaceholderGUI(sender, voucher).open();
                 }

@@ -53,7 +53,7 @@ public class Messages {
         if (config != null) {
             config.reload();
         } else {
-            config = new Config(file, AxVouchersPlugin.getInstance().getResource("messages.yml"));
+            config = new Config(file, AxVouchersPlugin.instance().getResource("messages.yml"));
         }
 
         refreshValues();

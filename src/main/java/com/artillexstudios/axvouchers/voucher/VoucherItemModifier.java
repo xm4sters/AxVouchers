@@ -4,8 +4,8 @@ import com.artillexstudios.axapi.items.PacketItemModifier;
 import com.artillexstudios.axapi.items.PacketItemModifierListener;
 import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.items.component.DataComponents;
-import com.artillexstudios.axapi.items.component.ItemLore;
-import com.artillexstudios.axapi.items.component.ProfileProperties;
+import com.artillexstudios.axapi.items.component.type.ItemLore;
+import com.artillexstudios.axapi.items.component.type.ProfileProperties;
 import com.artillexstudios.axapi.items.nbt.CompoundTag;
 import com.artillexstudios.axapi.utils.Pair;
 import com.artillexstudios.axapi.utils.StringUtils;
@@ -39,7 +39,7 @@ public class VoucherItemModifier implements PacketItemModifierListener {
         if (context == PacketItemModifier.Context.EQUIPMENT || context == PacketItemModifier.Context.DROPPED_ITEM) {
             String type = voucher.getMaterial();
             for (Pair<String, String> placeholder : cachedPlaceholders) {
-                type = type.replace(placeholder.getFirst(), placeholder.getValue());
+                type = type.replace(placeholder.first(), placeholder.getValue());
             }
 
             Material material = Material.matchMaterial(type.toUpperCase(Locale.ENGLISH));
@@ -101,7 +101,7 @@ public class VoucherItemModifier implements PacketItemModifierListener {
 
         String type = voucher.getMaterial();
         for (Pair<String, String> placeholder : cachedPlaceholders) {
-            type = type.replace(placeholder.getFirst(), placeholder.getValue());
+            type = type.replace(placeholder.first(), placeholder.getValue());
         }
 
         Material material = Material.matchMaterial(type.toUpperCase(Locale.ENGLISH));

@@ -3,20 +3,19 @@ package com.artillexstudios.axvouchers.voucher;
 import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.items.component.DataComponents;
 import com.artillexstudios.axapi.items.nbt.CompoundTag;
-import com.artillexstudios.axapi.libs.boostedyaml.boostedyaml.block.implementation.Section;
+import com.artillexstudios.axapi.libs.boostedyaml.block.implementation.Section;
 import com.artillexstudios.axapi.utils.ItemBuilder;
 import com.artillexstudios.axapi.utils.Pair;
+import com.artillexstudios.axapi.utils.logging.LogUtils;
+import com.artillexstudios.axvouchers.AxVouchersPlugin;
 import com.artillexstudios.axvouchers.actions.Actions;
 import com.artillexstudios.axvouchers.config.Config;
-import com.artillexstudios.axvouchers.database.DataHandler;
 import com.artillexstudios.axvouchers.requirements.Requirements;
 import net.kyori.adventure.text.Component;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,10 +25,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Voucher {
-    private static final Logger log = LoggerFactory.getLogger(Voucher.class);
     private final String id;
     private final Section section;
     private final HashMap<String, ItemStack> items = new HashMap<>();
@@ -102,12 +101,12 @@ public class Voucher {
             for (Map<?, ?> map : list) {
                 Map<Object, Object> castMap = (Map<Object, Object>) map;
                 if (!castMap.containsKey("chance")) {
-                    log.error("Found invalid random actions in voucher {}! Chance is not present!", getId());
+                    LogUtils.error("Found invalid random actions in voucher {}! Chance is not present!", getId());
                     continue;
                 }
 
                 if (!castMap.containsKey("actions")) {
-                    log.error("Found invalid random actions in voucher {}! Actions are not present!", getId());
+                    LogUtils.error("Found invalid random actions in voucher {}! Actions are not present!", getId());
                     continue;
                 }
 
@@ -128,8 +127,8 @@ public class Voucher {
 
     public boolean canUse(Player player) {
         if (requirements.isEmpty()) {
-            if (Config.DEBUG) {
-                log.info("Requirements are empty!");
+            if (Config.debug) {
+                LogUtils.info("Requirements are empty!");
             }
             return true;
         }
@@ -152,18 +151,28 @@ public class Voucher {
         return new ItemBuilder(section.getSection("item")).get();
     }
 
-    public ItemStack getItemStack(int amount, LinkedHashMap<String, String> placeholders) {
-        ItemStack stack = itemStack.clone();
+    public CompletableFuture<ItemStack> getItemStack(int amount, LinkedHashMap<String, String> placeholders) {
+        ItemStack stack = this.getItemStack0(amount, placeholders);
+        if (Config.dupeProtection && !this.stackable) {
+            UUID uuid = UUID.randomUUID();
+            return AxVouchersPlugin.instance().handler().insertAntidupe(uuid, amount).thenApply(result -> {
+                return WrappedItemStack.edit(stack, wrapped -> {
+                    CompoundTag tag = wrapped.get(DataComponents.customData());
+                    tag.putUUID("axvouchers-uuid", uuid);
+                    wrapped.set(DataComponents.customData(), tag);
+                    return wrapped;
+                }).toBukkit();
+            });
+        }
+
+        return CompletableFuture.completedFuture(stack);
+    }
+
+    private ItemStack getItemStack0(int amount, LinkedHashMap<String, String> placeholders) {
+        ItemStack stack = this.itemStack.clone();
         WrappedItemStack.edit(stack, (item) -> {
             CompoundTag tag = item.get(DataComponents.customData());
             tag.putString("axvouchers-id", getId());
-
-            if (Config.DUPE_PROTECTION && !stackable) {
-                UUID uuid = UUID.randomUUID();
-                tag.putUUID("axvouchers-uuid", uuid);
-
-                DataHandler.getInstance().insertAntidupe(uuid, amount);
-            }
 
             if (placeholders != null && !placeholders.isEmpty()) {
                 StringBuilder builder = new StringBuilder();

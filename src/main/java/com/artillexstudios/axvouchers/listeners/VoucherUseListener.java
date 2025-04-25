@@ -3,8 +3,10 @@ package com.artillexstudios.axvouchers.listeners;
 import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.items.component.DataComponents;
 import com.artillexstudios.axapi.items.nbt.CompoundTag;
+import com.artillexstudios.axapi.scheduler.Scheduler;
 import com.artillexstudios.axapi.utils.Cooldown;
 import com.artillexstudios.axapi.utils.StringUtils;
+import com.artillexstudios.axapi.utils.logging.LogUtils;
 import com.artillexstudios.axvouchers.config.Config;
 import com.artillexstudios.axvouchers.config.Messages;
 import com.artillexstudios.axvouchers.database.DataHandler;
@@ -16,13 +18,12 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -31,45 +32,56 @@ import java.util.UUID;
 
 public class VoucherUseListener implements Listener {
     private static final UUID NIL_UUID = new UUID(0, 0);
-    private static final Logger log = LoggerFactory.getLogger(VoucherUseListener.class);
     private static final HashMap<UUID, String> CONFIRM = new HashMap<>();
     private static final Cooldown<String> COOLDOWN = new Cooldown<>();
     private static final Cooldown<UUID> SHORT_COOLDOWN = new Cooldown<>();
+    private final DataHandler handler;
 
     public static void clear(Player player) {
         CONFIRM.remove(player.getUniqueId());
     }
 
-    @EventHandler
+    public VoucherUseListener(DataHandler handler) {
+        this.handler = handler;
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPlayerInteractEvent(PlayerInteractEvent event) {
-        if (Config.DEBUG) {
-            log.info("Player interact event");
+        if (Config.debug) {
+            LogUtils.debug("Player interact event");
         }
 
-        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+
         if (event.getHand() == null) {
-            if (Config.DEBUG) {
-                log.info("Event hand is null! How did this happen?");
+            if (Config.debug) {
+                LogUtils.debug("Event hand is null! How did this happen?");
             }
             return;
         }
 
         ItemStack item = event.getPlayer().getInventory().getItem(event.getHand());
         if (item == null || item.getType().isAir()) {
-            if (Config.DEBUG) {
-                log.info("Null or air item.");
+            if (Config.debug) {
+                LogUtils.debug("Null or air item.");
             }
             return;
         }
 
         WrappedItemStack wrappedItemStack = WrappedItemStack.wrap(item);
         CompoundTag tag = wrappedItemStack.get(DataComponents.customData());
+        Boolean using = tag.getBoolean("axvouchers-using");
+        if (using != null && using) {
+            return;
+        }
 
         Voucher voucher = Vouchers.fromItem(tag);
 
         if (voucher == null) {
-            if (Config.DEBUG) {
-                log.info("Voucher is null!");
+            if (Config.debug) {
+                LogUtils.debug("Voucher is null!");
             }
             return;
         }
@@ -77,8 +89,8 @@ public class VoucherUseListener implements Listener {
         event.setCancelled(true);
 
         if (voucher.isConsume()) {
-            if (Config.DEBUG) {
-                log.info("Voucher is consume!");
+            if (Config.debug) {
+                LogUtils.debug("Voucher is consume!");
             }
             event.setCancelled(false);
             return;
@@ -97,55 +109,61 @@ public class VoucherUseListener implements Listener {
 
         String placeholderString = Vouchers.placeholderString(tag);
         UUID uuid = Vouchers.getUUID(tag);
-        if (Config.DUPE_PROTECTION && !voucher.isStackable()) {
+        ItemStack clone = item.clone();
+        tag.putBoolean("axvouchers-using", true);
+        wrappedItemStack.set(DataComponents.customData(), tag);
+
+        item.setAmount(0);
+        if (Config.dupeProtection && !voucher.isStackable()) {
             if (uuid == null) {
                 item.setAmount(0);
 
                 event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.DUPED_VOUCHER));
-                DataHandler.DATA_THREAD.submit(() -> {
-                    DataHandler.getInstance().insertLog(event.getPlayer(), voucher, NIL_UUID, RemovalReason.UNKNOWN_UUID.name(), placeholderString);
-                });
+                this.handler.insertLog(event.getPlayer(), voucher, NIL_UUID, RemovalReason.UNKNOWN_UUID.name(), placeholderString);
                 return;
             }
 
-            if (DataHandler.getInstance().isDuped(uuid)) {
-                item.setAmount(0);
+            this.handler.incrementUsed(uuid).thenAccept(success -> {
+                if (!success) {
+                    // the item was duped
+                    this.handler.insertLog(event.getPlayer(), voucher, uuid, RemovalReason.MORE_THAN_ISSUED.name(), placeholderString);
+                    event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.DUPED_VOUCHER));
+                    return;
+                }
 
-                event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.DUPED_VOUCHER));
-                DataHandler.DATA_THREAD.submit(() -> {
-                    DataHandler.getInstance().insertLog(event.getPlayer(), voucher, uuid, RemovalReason.MORE_THAN_ISSUED.name(), placeholderString);
+                Scheduler.get().runAt(event.getPlayer().getLocation(), () -> {
+                    this.use(event.getPlayer(), voucher, placeholderString, tag, item, clone, uuid, wrappedItemStack);
                 });
-                return;
-            }
+            });
+            return;
         }
 
-        String confirm = CONFIRM.remove(event.getPlayer().getUniqueId());
+        this.use(event.getPlayer(), voucher, placeholderString, tag, item, clone, uuid, wrappedItemStack);
+    }
 
-        if (voucher.canUse(event.getPlayer())) {
-            if (Config.DEBUG) {
-                log.info("Using voucher for player {}!", event.getPlayer().getName());
+    private void use(Player player, Voucher voucher, String placeholderString, CompoundTag tag, ItemStack item, ItemStack clone, UUID uuid, WrappedItemStack wrappedItemStack) {
+        String confirm = CONFIRM.remove(player.getUniqueId());
+
+        if (voucher.canUse(player)) {
+            if (Config.debug) {
+                LogUtils.debug("Using voucher for player {}!", player.getName());
             }
 
             TagResolver[] resolvers = Vouchers.tagResolvers(placeholderString);
 
             if ((voucher.isConfirm() && confirm == null) || (voucher.isConfirm() && !Objects.equals(confirm, voucher.getId()))) {
-                event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.CONFIRM, Placeholder.parsed("name", MiniMessage.miniMessage().serialize(StringUtils.format(voucher.getName(), resolvers)))));
-                CONFIRM.put(event.getPlayer().getUniqueId(), voucher.getId());
+                player.sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.CONFIRM, Placeholder.parsed("name", MiniMessage.miniMessage().serialize(StringUtils.format(voucher.getName(), resolvers)))));
+                CONFIRM.put(player.getUniqueId(), voucher.getId());
                 return;
             }
 
-            if (Config.DUPE_PROTECTION && !voucher.isStackable() && uuid != null) {
-                DataHandler.getInstance().incrementUsed(uuid);
-            }
-
-            DataHandler.DATA_THREAD.submit(() -> {
-                DataHandler.getInstance().insertLog(event.getPlayer(), voucher, uuid == null ? NIL_UUID : uuid, RemovalReason.USE.name(), placeholderString);
-            });
-
-            SHORT_COOLDOWN.addCooldown(event.getPlayer().getUniqueId(), 250);
-            COOLDOWN.addCooldown(event.getPlayer().getUniqueId() + "-" + voucher.getId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
-            item.setAmount(item.getAmount() - 1);
-            voucher.doUse(event.getPlayer(), tag);
+            this.handler.insertLog(player, voucher, uuid == null ? NIL_UUID : uuid, RemovalReason.USE.name(), placeholderString);
+            SHORT_COOLDOWN.addCooldown(player.getUniqueId(), 250);
+            COOLDOWN.addCooldown(player.getUniqueId() + "-" + voucher.getId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
+            item.setAmount(clone.getAmount() - 1);
+            voucher.doUse(player, tag);
+            tag.remove("axvouchers-using");
+            wrappedItemStack.set(DataComponents.customData(), tag);
         }
     }
 
@@ -155,9 +173,18 @@ public class VoucherUseListener implements Listener {
         if (item == null || item.getType().isAir()) return;
         WrappedItemStack wrappedItemStack = WrappedItemStack.wrap(item);
         CompoundTag tag = wrappedItemStack.get(DataComponents.customData());
+        Boolean using = tag.getBoolean("axvouchers-using");
+        if (using != null && using) {
+            return;
+        }
+
         Voucher voucher = Vouchers.fromItem(tag);
 
         if (voucher == null) {
+            return;
+        }
+
+        if (!voucher.isConsume()) {
             return;
         }
 
@@ -174,54 +201,37 @@ public class VoucherUseListener implements Listener {
             return;
         }
 
-        if (!voucher.isConsume()) {
-            return;
-        }
-
         String placeholderString = Vouchers.placeholderString(tag);
         UUID uuid = Vouchers.getUUID(tag);
-        if (Config.DUPE_PROTECTION && !voucher.isStackable()) {
+        ItemStack clone = item.clone();
+        tag.putBoolean("axvouchers-using", true);
+        wrappedItemStack.set(DataComponents.customData(), tag);
+
+        item.setAmount(0);
+        if (Config.dupeProtection && !voucher.isStackable()) {
             if (uuid == null) {
                 item.setAmount(0);
 
                 event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.DUPED_VOUCHER));
-                DataHandler.DATA_THREAD.submit(() -> {
-                    DataHandler.getInstance().insertLog(event.getPlayer(), voucher, NIL_UUID, RemovalReason.UNKNOWN_UUID.name(), placeholderString);
+                this.handler.insertLog(event.getPlayer(), voucher, NIL_UUID, RemovalReason.UNKNOWN_UUID.name(), placeholderString);
+                return;
+            }
+
+            this.handler.incrementUsed(uuid).thenAccept(success -> {
+                if (!success) {
+                    // the item was duped
+                    this.handler.insertLog(event.getPlayer(), voucher, uuid, RemovalReason.MORE_THAN_ISSUED.name(), placeholderString);
+                    event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.DUPED_VOUCHER));
+                    return;
+                }
+
+                Scheduler.get().runAt(event.getPlayer().getLocation(), () -> {
+                    this.use(event.getPlayer(), voucher, placeholderString, tag, item, clone, uuid, wrappedItemStack);
                 });
-                return;
-            }
-
-            if (DataHandler.getInstance().isDuped(uuid)) {
-                item.setAmount(0);
-
-                event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.DUPED_VOUCHER));
-                DataHandler.DATA_THREAD.submit(() -> {
-                    DataHandler.getInstance().insertLog(event.getPlayer(), voucher, uuid, RemovalReason.MORE_THAN_ISSUED.name(), placeholderString);
-                });
-                return;
-            }
-        }
-
-        String confirm = CONFIRM.remove(event.getPlayer().getUniqueId());
-
-        if (voucher.canUse(event.getPlayer())) {
-            if ((voucher.isConfirm() && confirm == null) || (voucher.isConfirm() && !Objects.equals(confirm, voucher.getId()))) {
-                CONFIRM.put(event.getPlayer().getUniqueId(), voucher.getId());
-                return;
-            }
-
-            if (Config.DUPE_PROTECTION && !voucher.isStackable() && uuid != null) {
-                DataHandler.getInstance().incrementUsed(uuid);
-            }
-
-            DataHandler.DATA_THREAD.submit(() -> {
-                DataHandler.getInstance().insertLog(event.getPlayer(), voucher, uuid == null ? NIL_UUID : uuid, RemovalReason.USE.name(), placeholderString);
             });
-
-            SHORT_COOLDOWN.addCooldown(event.getPlayer().getUniqueId(), 250);
-            COOLDOWN.addCooldown(event.getPlayer().getUniqueId() + "-" + voucher.getId(), Duration.ofSeconds(voucher.getCooldown()).toMillis());
-            item.setAmount(item.getAmount() - 1);
-            voucher.doUse(event.getPlayer(), tag);
+            return;
         }
+
+        this.use(event.getPlayer(), voucher, placeholderString, tag, item, clone, uuid, wrappedItemStack);
     }
 }

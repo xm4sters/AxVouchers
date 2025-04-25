@@ -16,11 +16,11 @@ repositories {
 }
 
 dependencies {
-    implementation("com.artillexstudios.axapi:axapi:1.4.338:all")
-    implementation("dev.jorel:commandapi-bukkit-shade:9.5.0")
+    implementation("com.artillexstudios.axapi:axapi:1.4.663:all")
+    implementation("dev.jorel:commandapi-bukkit-shade:10.0.0")
     compileOnly("com.zaxxer:HikariCP:5.0.1")
     compileOnly("dev.triumphteam:triumph-gui:3.1.7")
-    compileOnly("com.h2database:h2:2.3.230")
+    compileOnly("com.h2database:h2:2.3.232")
     compileOnly("org.xerial:sqlite-jdbc:3.46.0.0")
     compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
     compileOnly("org.slf4j:slf4j-api:2.0.9")
@@ -39,6 +39,7 @@ tasks {
     }
 
     shadowJar {
+        relocate("org.apache.commons.math3", "com.artillexstudios.axvouchers.libs.axapi.libs.math3")
         relocate("com.artillexstudios.axapi", "com.artillexstudios.axvouchers.libs.axapi")
         relocate("dev.jorel.commandapi", "com.artillexstudios.axvouchers.libs.commandapi")
         relocate("dev.triumphteam", "com.artillexstudios.axvouchers.libs.triumphgui")

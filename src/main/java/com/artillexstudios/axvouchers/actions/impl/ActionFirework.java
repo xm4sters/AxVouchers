@@ -19,7 +19,7 @@ import org.bukkit.persistence.PersistentDataType;
 import java.util.Locale;
 
 public class ActionFirework extends Action {
-    public static final NamespacedKey FIREWORK_KEY = new NamespacedKey(AxVouchersPlugin.getInstance(), "ax_firework");
+    public static final NamespacedKey FIREWORK_KEY = new NamespacedKey(AxVouchersPlugin.instance(), "ax_firework");
 
     public ActionFirework() {
         super("firework");
