@@ -34,7 +34,7 @@ public class AxVouchersPlugin extends AxPlugin {
     public void load() {
         INSTANCE = this;
         DatabaseTypes.register(new H2DatabaseType("com.artillexstudios.axvouchers.libs.h2"), true);
-        DatabaseTypes.register(new SQLiteDatabaseType("com.artillexstudios.axvouchers.libs.sqlite"));
+        DatabaseTypes.register(new SQLiteDatabaseType());
         DatabaseTypes.register(new MySQLDatabaseType());
         Config.reload();
 
@@ -70,13 +70,11 @@ public class AxVouchersPlugin extends AxPlugin {
     @Override
     public void dependencies(DependencyManagerWrapper manager) {
         manager.repository("https://repo.codemc.org/repository/maven-public/");
-        manager.dependency("org{}xerial:sqlite-jdbc:3.46.0.0");
         manager.dependency("com{}h2database:h2:2.3.232");
         manager.dependency("dev{}triumphteam:triumph-gui:3.1.7");
         manager.dependency("com{}zaxxer:HikariCP:5.0.1");
 
         manager.relocate("dev{}triumphteam", "com.artillexstudios.axvouchers.libs.triumphgui");
-        manager.relocate("org{}sqlite", "com.artillexstudios.axvouchers.libs.sqlite");
         manager.relocate("org{}h2", "com.artillexstudios.axvouchers.libs.h2");
         manager.relocate("com{}zaxxer", "com.artillexstudios.axvouchers.libs.hikaricp");
     }

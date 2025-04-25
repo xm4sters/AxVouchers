@@ -21,7 +21,6 @@ dependencies {
     compileOnly("com.zaxxer:HikariCP:5.0.1")
     compileOnly("dev.triumphteam:triumph-gui:3.1.7")
     compileOnly("com.h2database:h2:2.3.232")
-    compileOnly("org.xerial:sqlite-jdbc:3.46.0.0")
     compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
     compileOnly("org.slf4j:slf4j-api:2.0.9")
     compileOnly("commons-io:commons-io:2.15.0")
@@ -44,7 +43,6 @@ tasks {
         relocate("dev.jorel.commandapi", "com.artillexstudios.axvouchers.libs.commandapi")
         relocate("dev.triumphteam", "com.artillexstudios.axvouchers.libs.triumphgui")
         relocate("com.zaxxer", "com.artillexstudios.axvouchers.libs.hikaricp")
-        relocate("org.sqlite", "com.artillexstudios.axvouchers.libs.sqlite")
         relocate("org.h2", "com.artillexstudios.axvouchers.libs.h2")
     }
 

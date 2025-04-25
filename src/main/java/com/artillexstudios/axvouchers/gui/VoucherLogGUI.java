@@ -98,7 +98,7 @@ public final class VoucherLogGUI {
                 }
 
                 lore.add(StringUtils.format("<white>Time: <#DC143C><time>", Placeholder.unparsed("time", format.format(entry.time()))));
-                lore.add(StringUtils.format("<white>UUID: <#DC143C><uuid>", Placeholder.unparsed("uuid", entry.uuid().toString())));
+                lore.add(StringUtils.format("<white>UUID: <#DC143C><uuid>", Placeholder.unparsed("uuid", entry.uuid() instanceof  UUID uuid ? uuid.toString() : (String) entry.uuid())));
                 lore.add(StringUtils.format("<white>Remove reason: <#DC143C><reason>", Placeholder.unparsed("reason", entry.duped())));
                 lore.add(StringUtils.format("<white>ID: <#DC143C><id>", Placeholder.unparsed("id", String.valueOf(entry.id()))));
 

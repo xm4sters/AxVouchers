@@ -5,6 +5,7 @@ import com.artillexstudios.axapi.database.DatabaseQuery;
 import com.artillexstudios.axapi.database.handler.ListHandler;
 import com.artillexstudios.axapi.database.handler.TransformerHandler;
 import com.artillexstudios.axapi.scheduler.Scheduler;
+import com.artillexstudios.axapi.utils.logging.LogUtils;
 import com.artillexstudios.axvouchers.database.log.VoucherLogEntry;
 import com.artillexstudios.axvouchers.voucher.Voucher;
 import org.bukkit.Bukkit;
@@ -67,6 +68,9 @@ public final class DataHandler {
             }
 
             return entries;
+        }).exceptionally(throwable -> {
+            LogUtils.error("An exception occurred while fetching logs!", throwable);
+            return null;
         });
     }
 
