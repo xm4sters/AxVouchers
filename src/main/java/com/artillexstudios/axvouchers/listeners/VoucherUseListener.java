@@ -17,6 +17,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -45,7 +46,7 @@ public class VoucherUseListener implements Listener {
         this.handler = handler;
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler
     public void onPlayerInteractEvent(PlayerInteractEvent event) {
         if (Config.debug) {
             LogUtils.debug("Player interact event");
@@ -92,7 +93,7 @@ public class VoucherUseListener implements Listener {
             if (Config.debug) {
                 LogUtils.debug("Voucher is consume!");
             }
-            event.setCancelled(false);
+            event.setUseItemInHand(Event.Result.ALLOW);
             return;
         }
 
