@@ -16,7 +16,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.artillexstudios.axapi:axapi:1.4.672:all")
+    implementation("com.artillexstudios.axapi:axapi:1.4.675:all")
     implementation("dev.jorel:commandapi-bukkit-shade:10.0.0")
     compileOnly("com.zaxxer:HikariCP:5.0.1")
     compileOnly("dev.triumphteam:triumph-gui:3.1.7")

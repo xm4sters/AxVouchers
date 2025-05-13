@@ -155,6 +155,7 @@ public class VoucherUseListener implements Listener {
             if ((voucher.isConfirm() && confirm == null) || (voucher.isConfirm() && !Objects.equals(confirm, voucher.getId()))) {
                 player.sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.CONFIRM, Placeholder.parsed("name", MiniMessage.miniMessage().serialize(StringUtils.format(voucher.getName(), resolvers)))));
                 CONFIRM.put(player.getUniqueId(), voucher.getId());
+                item.setAmount(clone.getAmount());
                 return;
             }
 
