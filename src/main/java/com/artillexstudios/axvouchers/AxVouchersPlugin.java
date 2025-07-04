@@ -23,6 +23,7 @@ import org.bukkit.Bukkit;
 
 public class AxVouchersPlugin extends AxPlugin {
     private static AxVouchersPlugin INSTANCE;
+    private DatabaseHandler databaseHandler;
     private VoucherCommand command;
     private DataHandler handler;
 
@@ -38,7 +39,8 @@ public class AxVouchersPlugin extends AxPlugin {
         DatabaseTypes.register(new MySQLDatabaseType());
         Config.reload();
 
-        this.handler = new DataHandler(new DatabaseHandler(this, Config.database));
+        this.databaseHandler = new DatabaseHandler(this, Config.database);
+        this.handler = new DataHandler(this.databaseHandler);
         this.command = new VoucherCommand(this, this.handler);
 
         this.command.load();
@@ -56,7 +58,9 @@ public class AxVouchersPlugin extends AxPlugin {
             Bukkit.getPluginManager().registerEvents(new CraftListener(), this);
         }
 
-        PacketItemModifier.registerModifierListener(new VoucherItemModifier());
+        if (Config.usePacketItems) {
+            PacketItemModifier.registerModifierListener(new VoucherItemModifier());
+        }
 
         loadCommands();
     }
@@ -90,6 +94,7 @@ public class AxVouchersPlugin extends AxPlugin {
     @Override
     public void disable() {
         CommandAPI.onDisable();
+        this.databaseHandler.close();
     }
 
     public DataHandler handler() {

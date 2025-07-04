@@ -24,6 +24,8 @@ public class Config implements ConfigurationPart {
     public static boolean dupeProtection = true;
     @Comment("Whether to prevent the use of vouchers in crafting recipes")
     public static boolean preventCrafts = true;
+    @Comment("Whether to use packet items for vouchers.")
+    public static boolean usePacketItems = true;
     @Comment("If we should send a message when a requirement fails")
     public static boolean sendRequirementFail = true;
     public static DatabaseConfig database = new DatabaseConfig();

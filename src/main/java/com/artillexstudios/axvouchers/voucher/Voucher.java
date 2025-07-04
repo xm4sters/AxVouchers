@@ -63,8 +63,17 @@ public class Voucher {
         nameCache.clear();
         placeholderCache.clear();
 
-        itemStack = new ItemBuilder(section.getSection("item")).setLore(List.of()).setName("").get();
-        itemStack.setType(Material.STICK);
+        ItemBuilder builder = new ItemBuilder(section.getSection("item"));
+        if (Config.usePacketItems) {
+            builder.setLore(List.of())
+                    .setName("");
+
+            itemStack = builder.get();
+            itemStack.setType(Material.STICK);
+        } else {
+            itemStack = builder.get();
+        }
+
         String name = section.getString("item.name");
         this.name = name == null ? this.name : name;
         this.lore = section.getStringList("item.lore", List.of());
@@ -84,7 +93,7 @@ public class Voucher {
 
         stackable = section.getBoolean("stackable", stackable);
         consume = section.getBoolean("consume", consume);
-        if (consume) {
+        if (consume && Config.usePacketItems) {
             itemStack.setType(Material.GOLDEN_APPLE);
         }
 
