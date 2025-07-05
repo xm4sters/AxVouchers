@@ -39,6 +39,7 @@ public class AxVouchersPlugin extends AxPlugin {
         DatabaseTypes.register(new MySQLDatabaseType());
         Config.reload();
 
+        Config.database.tablePrefix("");
         this.databaseHandler = new DatabaseHandler(this, Config.database);
         this.handler = new DataHandler(this.databaseHandler);
         this.command = new VoucherCommand(this, this.handler);
