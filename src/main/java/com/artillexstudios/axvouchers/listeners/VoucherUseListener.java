@@ -34,8 +34,8 @@ import java.util.UUID;
 public class VoucherUseListener implements Listener {
     private static final UUID NIL_UUID = new UUID(0, 0);
     private static final HashMap<UUID, String> CONFIRM = new HashMap<>();
-    private static final Cooldown<String> COOLDOWN = new Cooldown<>();
-    private static final Cooldown<UUID> SHORT_COOLDOWN = new Cooldown<>();
+    private static final Cooldown<String> COOLDOWN = Cooldown.create();
+    private static final Cooldown<UUID> SHORT_COOLDOWN = Cooldown.create();
     private final DataHandler handler;
 
     public static void clear(Player player) {
@@ -102,9 +102,9 @@ public class VoucherUseListener implements Listener {
             return;
         }
 
-        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId() + "-" + voucher.getId());
+        long remaining = COOLDOWN.getRemaining(event.getPlayer().getUniqueId() + "-" + voucher.getId());
         if (remaining > 0) {
-            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remaining))));
+            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(Math.ceil((float) remaining / 1000)))));
             return;
         }
 
@@ -197,9 +197,9 @@ public class VoucherUseListener implements Listener {
             return;
         }
 
-        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId() + "-" + voucher.getId());
+        long remaining = COOLDOWN.getRemaining(event.getPlayer().getUniqueId() + "-" + voucher.getId());
         if (remaining > 0) {
-            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remaining))));
+            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(Math.ceil((float) remaining / 1000)))));
             return;
         }
 

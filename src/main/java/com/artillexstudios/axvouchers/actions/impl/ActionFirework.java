@@ -36,7 +36,7 @@ public class ActionFirework extends Action {
                 return;
             }
 
-            Firework fw = (Firework) world.spawnEntity(player.getLocation(), EntityType.FIREWORK);
+            Firework fw = (Firework) world.spawnEntity(player.getLocation(), EntityType.FIREWORK_ROCKET);
             FireworkMeta meta = fw.getFireworkMeta();
             meta.addEffect(FireworkEffect.builder().with(FireworkEffect.Type.valueOf(split[1].toUpperCase(Locale.ENGLISH))).withColor(fireWorkColor).build());
             meta.setPower(0);

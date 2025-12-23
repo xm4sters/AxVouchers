@@ -11,23 +11,24 @@ repositories {
 
     maven("https://repo.artillex-studios.com/releases/")
     maven("https://repo.codemc.org/repository/maven-public/")
+    maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
 
 dependencies {
-    implementation("com.artillexstudios.axapi:axapi:1.4.720:all")
-    implementation("dev.jorel:commandapi-bukkit-shade:10.1.0")
-    compileOnly("com.zaxxer:HikariCP:5.0.1")
+    implementation("com.artillexstudios.axapi:axapi:1.4.830:all")
+    implementation("dev.jorel:commandapi-paper-shade:11.1.0")
     compileOnly("dev.triumphteam:triumph-gui:3.1.7")
     compileOnly("com.h2database:h2:2.3.232")
-    compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
-    compileOnly("org.slf4j:slf4j-api:2.0.9")
-    compileOnly("commons-io:commons-io:2.15.0")
-    compileOnly("org.apache.commons:commons-text:1.11.0")
+    compileOnly("com.zaxxer:HikariCP:5.0.1")
+    compileOnly("io.papermc.paper:paper-api:1.20.6-R0.1-SNAPSHOT")
     compileOnly("org.apache.commons:commons-math3:3.6.1")
+    compileOnly("org.apache.commons:commons-text:1.11.0")
     compileOnly("me.clip:placeholderapi:2.11.5")
+    compileOnly("commons-io:commons-io:2.15.0")
     compileOnly("it.unimi.dsi:fastutil:8.5.13")
+    compileOnly("org.slf4j:slf4j-api:2.0.9")
 }
 
 tasks {

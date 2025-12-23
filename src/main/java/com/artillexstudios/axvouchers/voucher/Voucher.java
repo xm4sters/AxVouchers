@@ -63,7 +63,7 @@ public class Voucher {
         nameCache.clear();
         placeholderCache.clear();
 
-        ItemBuilder builder = new ItemBuilder(section.getSection("item"));
+        ItemBuilder builder = ItemBuilder.create(section.getSection("item"));
         if (Config.usePacketItems) {
             builder.setLore(List.of())
                     .setName("");
@@ -87,7 +87,7 @@ public class Voucher {
         items.clear();
         section.getOptionalMapList("items").ifPresent(list -> {
             for (Map<?, ?> map1 : list) {
-                items.put(map1.get("id").toString(), new ItemBuilder((Map<Object, Object>) map1).get());
+                items.put(map1.get("id").toString(), ItemBuilder.create((Map<Object, Object>) map1).get());
             }
         });
 
@@ -157,7 +157,7 @@ public class Voucher {
     }
 
     public ItemStack getForGUI() {
-        return new ItemBuilder(section.getSection("item")).get();
+        return ItemBuilder.create(section.getSection("item")).get();
     }
 
     public CompletableFuture<ItemStack> getItemStack(int amount, LinkedHashMap<String, String> placeholders) {

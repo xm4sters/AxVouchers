@@ -36,7 +36,7 @@ public class Config implements ConfigurationPart {
     public static boolean debug = false;
     public static int configVersion = 1;
     private static final Config INSTANCE = new Config();
-    private YamlConfiguration config = null;
+    private YamlConfiguration<?> config = null;
 
     public static boolean reload() {
         return INSTANCE.refreshConfig();

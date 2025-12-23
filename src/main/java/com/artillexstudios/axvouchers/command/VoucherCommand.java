@@ -14,19 +14,19 @@ import com.artillexstudios.axvouchers.gui.VoucherLogGUI;
 import com.artillexstudios.axvouchers.utils.FileUtils;
 import com.artillexstudios.axvouchers.voucher.Voucher;
 import com.artillexstudios.axvouchers.voucher.Vouchers;
+import com.destroystokyo.paper.profile.PlayerProfile;
 import dev.jorel.commandapi.CommandAPI;
-import dev.jorel.commandapi.CommandAPIBukkitConfig;
+import dev.jorel.commandapi.CommandAPIPaperConfig;
 import dev.jorel.commandapi.CommandTree;
+import dev.jorel.commandapi.arguments.EntitySelectorArgument;
 import dev.jorel.commandapi.arguments.IntegerArgument;
 import dev.jorel.commandapi.arguments.LiteralArgument;
 import dev.jorel.commandapi.arguments.MapArgumentBuilder;
-import dev.jorel.commandapi.arguments.OfflinePlayerArgument;
-import dev.jorel.commandapi.arguments.PlayerArgument;
+import dev.jorel.commandapi.arguments.PlayerProfileArgument;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -34,6 +34,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.UUID;
 
 public final class VoucherCommand {
     private final AxPlugin plugin;
@@ -45,8 +46,7 @@ public final class VoucherCommand {
     }
 
     public void load() {
-        CommandAPI.onLoad(new CommandAPIBukkitConfig(this.plugin)
-                .skipReloadDatapacks(true)
+        CommandAPI.onLoad(new CommandAPIPaperConfig(this.plugin)
                 .setNamespace("axvouchers")
         );
     }
@@ -56,7 +56,7 @@ public final class VoucherCommand {
                 .withAliases("vouchers", "axvoucher", "axvouchers")
                 .then(new LiteralArgument("give")
                         .withPermission("axvouchers.command.give")
-                        .then(new PlayerArgument("player")
+                        .then(new EntitySelectorArgument.OnePlayer("player")
                                 .then(Arguments.INSTANCE.voucher("voucher")
                                         .then(new IntegerArgument("amount")
                                                 .then(new MapArgumentBuilder<String, String>("placeholders")
@@ -119,15 +119,19 @@ public final class VoucherCommand {
                 )
                 .then(new LiteralArgument("logs")
                         .withPermission("axvouchers.command.logs")
-                        .then(new OfflinePlayerArgument("player")
+                        .then(new PlayerProfileArgument("player")
                                 .executesPlayer(context -> {
                                     Player sender = context.sender();
-                                    OfflinePlayer user = context.args().getByClass("player", OfflinePlayer.class);
+                                    PlayerProfile user = context.args().getByClass("player", PlayerProfile.class);
                                     if (user == null) {
                                         return;
                                     }
+                                    UUID uuid = user.getId();
+                                    if (uuid == null) {
+                                        return;
+                                    }
 
-                                    new VoucherLogGUI(this.handler).open(sender, user);
+                                    new VoucherLogGUI(this.handler).open(sender, Bukkit.getOfflinePlayer(uuid));
                                 })
                         )
                 )

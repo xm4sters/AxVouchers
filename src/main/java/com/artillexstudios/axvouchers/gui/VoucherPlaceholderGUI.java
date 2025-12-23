@@ -46,7 +46,7 @@ public class VoucherPlaceholderGUI {
         new GuiFiller(placeholderSelector).fillBorder(new GuiItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)));
 
         for (String placeholder : this.voucher.placeholders()) {
-            placeholderSelector.addItem(new GuiItem(new ItemBuilder(Material.OAK_SIGN).setName("<yellow>" + placeholder).setLore(List.of("", " <gray>- <white><value>", "<yellow>Click to edit!"), Placeholder.unparsed("value", this.valuesMap.getOrDefault(placeholder, ""))).get(), event -> {
+            placeholderSelector.addItem(new GuiItem(ItemBuilder.create(Material.OAK_SIGN).setName("<yellow>" + placeholder).setLore(List.of("", " <gray>- <white><value>", "<yellow>Click to edit!"), Placeholder.unparsed("value", this.valuesMap.getOrDefault(placeholder, ""))).get(), event -> {
                 SignInput input = new SignInput.Builder()
                         .setLines(List.of(Component.empty(), Component.text("^^^^^^^^").color(NamedTextColor.WHITE), Component.text("Enter a new value for " + placeholder).color(NamedTextColor.WHITE), Component.empty()).toArray(new Component[0]))
                         .setHandler(((player, lines) -> {
@@ -62,7 +62,7 @@ public class VoucherPlaceholderGUI {
             }));
         }
 
-        placeholderSelector.setItem(43, new GuiItem(new ItemBuilder(Material.ANVIL).setName("<#00FF00>Amount selector").setLore(List.of("", "<#00ff00>Currently selected: <amount>"), Placeholder.unparsed("amount", String.valueOf(this.amount))).get(), event -> {
+        placeholderSelector.setItem(43, new GuiItem(ItemBuilder.create(Material.ANVIL).setName("<#00FF00>Amount selector").setLore(List.of("", "<#00ff00>Currently selected: <amount>"), Placeholder.unparsed("amount", String.valueOf(this.amount))).get(), event -> {
             SignInput input = new SignInput.Builder()
                     .setLines(List.of(Component.empty(), Component.text("^^^^^^^^").color(NamedTextColor.WHITE), Component.text("Enter the new amount").color(NamedTextColor.WHITE), Component.empty()).toArray(new Component[0]))
                     .setHandler(((player, lines) -> {
@@ -81,7 +81,7 @@ public class VoucherPlaceholderGUI {
             input.open();
         }));
 
-        placeholderSelector.setItem(44, new GuiItem(new ItemBuilder(Material.LIME_CONCRETE).setName("<#00FF00>Accept").get(), event -> {
+        placeholderSelector.setItem(44, new GuiItem(ItemBuilder.create(Material.LIME_CONCRETE).setName("<#00FF00>Accept").get(), event -> {
             for (Map.Entry<String, String> entry : this.valuesMap.entrySet()) {
                 if (entry.getValue().isEmpty()) {
                     this.sender.sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.PLACEHOLDERS_NOT_SET, Placeholder.unparsed("placeholders", entry.getKey())));

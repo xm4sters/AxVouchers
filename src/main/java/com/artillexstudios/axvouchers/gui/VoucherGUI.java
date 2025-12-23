@@ -30,11 +30,11 @@ public enum VoucherGUI {
 
         new GuiFiller(gui).fillBorder(new GuiItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)));
 
-        gui.setItem(38, new GuiItem(new ItemBuilder(Material.ARROW).setName("<#DC143C>Previous page").get(), event -> {
+        gui.setItem(38, new GuiItem(ItemBuilder.create(Material.ARROW).setName("<#DC143C>Previous page").get(), event -> {
             gui.previous();
         }));
 
-        gui.setItem(42, new GuiItem(new ItemBuilder(Material.ARROW).setName("<#DC143C>Next page").get(), event -> {
+        gui.setItem(42, new GuiItem(ItemBuilder.create(Material.ARROW).setName("<#DC143C>Next page").get(), event -> {
             gui.next();
         }));
 
@@ -46,7 +46,7 @@ public enum VoucherGUI {
             }
 
             List<String> itemLore = meta.getLore();
-            ItemBuilder builder = new ItemBuilder(itemStack);
+            ItemBuilder builder = ItemBuilder.create(itemStack);
             List<String> lore = new ArrayList<>(itemLore == null ? List.of() : itemLore);
             lore.add("");
             lore.add("<#DC143C>Left click to get!");
