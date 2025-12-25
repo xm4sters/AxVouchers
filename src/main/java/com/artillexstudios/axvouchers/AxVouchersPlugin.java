@@ -8,6 +8,7 @@ import com.artillexstudios.axapi.database.impl.MySQLDatabaseType;
 import com.artillexstudios.axapi.database.impl.SQLiteDatabaseType;
 import com.artillexstudios.axapi.dependencies.DependencyManagerWrapper;
 import com.artillexstudios.axapi.items.PacketItemModifier;
+import com.artillexstudios.axapi.utils.featureflags.FeatureFlags;
 import com.artillexstudios.axvouchers.command.VoucherCommand;
 import com.artillexstudios.axvouchers.config.Config;
 import com.artillexstudios.axvouchers.config.Messages;
@@ -29,6 +30,11 @@ public class AxVouchersPlugin extends AxPlugin {
 
     public static AxVouchersPlugin instance() {
         return INSTANCE;
+    }
+
+    @Override
+    public void updateFlags() {
+        FeatureFlags.ENABLE_PACKET_LISTENERS.set(true);
     }
 
     @Override
