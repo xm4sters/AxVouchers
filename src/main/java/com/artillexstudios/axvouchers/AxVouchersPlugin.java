@@ -47,7 +47,7 @@ public class AxVouchersPlugin extends AxPlugin {
     public void updateFlags() {
         FeatureFlags.PACKET_ENTITY_TRACKER_ENABLED.set(true);
         FeatureFlags.ENABLE_PACKET_LISTENERS.set(true);
-        FeatureFlags.DEBUG.set(true);
+        FeatureFlags.DEBUG.set(false);
     }
 
     @Override
@@ -108,14 +108,15 @@ public class AxVouchersPlugin extends AxPlugin {
                 URLClassLoaderWrapper.wrap((URLClassLoader) getClassLoader())
         );
         dependencyManager.repository(MavenRepository.mavenCentral());
-        dependencyManager.dependency(new Dependency("org.xerial", "sqlite-jdbc", "3.42.0.0"));
-        dependencyManager.dependency(new Dependency("com.h2database", "h2", "2.2.220"));
+        dependencyManager.dependency(new Dependency("org.xerial", "sqlite-jdbc", "3.51.1.0"));
+        dependencyManager.dependency(new Dependency("com.h2database", "h2", "2.4.240"));
         dependencyManager.load();
     }
 
     @Override
     public void reload() {
         Config.reload();
+        FeatureFlags.DEBUG.set(Config.DEBUG);
         Messages.reload();
 
         Vouchers.loadAll();
