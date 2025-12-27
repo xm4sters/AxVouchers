@@ -1,6 +1,6 @@
 package com.artillexstudios.axvouchers.database;
 
-import com.artillexstudios.axapi.data.ThreadedQueue;
+import com.artillexstudios.axapi.executor.ThreadedQueue;
 import com.artillexstudios.axapi.utils.Pair;
 import com.artillexstudios.axvouchers.AxVouchersPlugin;
 import com.artillexstudios.axvouchers.database.log.VoucherLog;

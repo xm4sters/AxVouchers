@@ -2,8 +2,8 @@ package com.artillexstudios.axvouchers.command;
 
 import com.artillexstudios.axapi.AxPlugin;
 import com.artillexstudios.axapi.hologram.Hologram;
-import com.artillexstudios.axapi.hologram.HologramLine;
-import com.artillexstudios.axapi.hologram.HologramPage;
+import com.artillexstudios.axapi.hologram.HologramTypes;
+import com.artillexstudios.axapi.hologram.page.HologramPage;
 import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.nms.NMSHandlers;
 import com.artillexstudios.axapi.packetentity.PacketEntity;
@@ -108,11 +108,11 @@ public class VoucherCommand {
 
         new GuiFiller(gui).fillBorder(new GuiItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)));
 
-        gui.setItem(38, new GuiItem(new ItemBuilder(Material.ARROW).setName("<#DC143C>Previous page").get(), event -> {
+        gui.setItem(38, new GuiItem(ItemBuilder.create(Material.ARROW).setName("<#DC143C>Previous page").get(), event -> {
             gui.previous();
         }));
 
-        gui.setItem(42, new GuiItem(new ItemBuilder(Material.ARROW).setName("<#DC143C>Next page").get(), event -> {
+        gui.setItem(42, new GuiItem(ItemBuilder.create(Material.ARROW).setName("<#DC143C>Next page").get(), event -> {
             gui.next();
         }));
 
@@ -124,7 +124,7 @@ public class VoucherCommand {
             }
 
             List<String> itemLore = meta.getLore();
-            ItemBuilder builder = new ItemBuilder(itemStack);
+            ItemBuilder builder = ItemBuilder.create(itemStack);
             List<String> lore = new ArrayList<>(itemLore == null ? List.of() : itemLore);
             lore.add("");
             lore.add("<#DC143C>Left click to get!");
@@ -158,11 +158,11 @@ public class VoucherCommand {
 
         new GuiFiller(gui).fillBorder(new GuiItem(new ItemStack(Material.GRAY_STAINED_GLASS_PANE)));
 
-        gui.setItem(38, new GuiItem(new ItemBuilder(Material.ARROW).setName("<#DC143C>Previous page").get(), event -> {
+        gui.setItem(38, new GuiItem(ItemBuilder.create(Material.ARROW).setName("<#DC143C>Previous page").get(), event -> {
             gui.previous();
         }));
 
-        gui.setItem(42, new GuiItem(new ItemBuilder(Material.ARROW).setName("<#DC143C>Next page").get(), event -> {
+        gui.setItem(42, new GuiItem(ItemBuilder.create(Material.ARROW).setName("<#DC143C>Next page").get(), event -> {
             gui.next();
         }));
 
@@ -174,14 +174,14 @@ public class VoucherCommand {
 
         for (VoucherLog.Entry entry : log.getEntries()) {
             Voucher voucher = Vouchers.parse(entry.type());
-            ItemStack itemStack = voucher == null ? new ItemBuilder(Material.BEDROCK).setName(entry.type()).get() : voucher.getForGUI();
+            ItemStack itemStack = voucher == null ? ItemBuilder.create(Material.BEDROCK).setName(entry.type()).get() : voucher.getForGUI();
             ItemMeta meta = itemStack.getItemMeta();
             if (meta == null) {
                 continue;
             }
 
             List<String> itemLore = meta.getLore();
-            ItemBuilder builder = new ItemBuilder(itemStack);
+            ItemBuilder builder = ItemBuilder.create(itemStack);
             List<String> lore = new ArrayList<>(itemLore == null ? List.of() : itemLore);
             lore.add("");
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd - HH:mm:ss");
@@ -215,9 +215,15 @@ public class VoucherCommand {
 
     @Subcommand("test2")
     public void test2(Player sender) {
-        Hologram hologram = new Hologram(sender.getLocation(), "hologram");
-        hologram.addLine("&#ff0000Sziaaa!", HologramLine.Type.TEXT);
-        hologram.addLine(WrappedItemStack.wrap(new ItemStack(Material.ARROW)).toSNBT(), HologramLine.Type.ITEM_STACK);
+        Hologram hologram = new Hologram(sender.getLocation());
+
+        HologramPage<String, ?> textPage = hologram.createPage(HologramTypes.TEXT);
+        textPage.setContent("&#ff0000Sziaaa!");
+        textPage.spawn();
+
+        HologramPage<WrappedItemStack, ?> itemPage = hologram.createPage(HologramTypes.ITEM_STACK);
+        itemPage.setContent(WrappedItemStack.wrap(new ItemStack(Material.ARROW)));
+        itemPage.spawn();
     }
 
     @Subcommand("test3")

@@ -2,11 +2,8 @@ package com.artillexstudios.axvouchers;
 
 import com.artillexstudios.axapi.AxPlugin;
 import com.artillexstudios.axapi.items.PacketItemModifier;
-import com.artillexstudios.axapi.libs.libby.BukkitLibraryManager;
-import com.artillexstudios.axapi.libs.libby.Library;
-import com.artillexstudios.axapi.libs.libby.logging.LogLevel;
-import com.artillexstudios.axapi.utils.FeatureFlags;
-import com.artillexstudios.axapi.utils.StringUtils;
+import com.artillexstudios.axapi.utils.*;
+import com.artillexstudios.axapi.utils.featureflags.FeatureFlags;
 import com.artillexstudios.axvouchers.command.VoucherCommand;
 import com.artillexstudios.axvouchers.config.Config;
 import com.artillexstudios.axvouchers.config.Messages;
@@ -23,9 +20,16 @@ import com.artillexstudios.axvouchers.voucher.VoucherItemModifier;
 import com.artillexstudios.axvouchers.voucher.Vouchers;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
+import revxrsal.zapper.Dependency;
+import revxrsal.zapper.DependencyManager;
+import revxrsal.zapper.classloader.URLClassLoaderWrapper;
+import revxrsal.zapper.repository.MavenRepository;
 import revxrsal.commands.bukkit.BukkitCommandActor;
 import revxrsal.commands.bukkit.BukkitCommandHandler;
 import revxrsal.commands.exception.CommandErrorException;
+
+import java.io.File;
+import java.net.URLClassLoader;
 
 public class AxVouchersPlugin extends AxPlugin {
     private static AxVouchersPlugin INSTANCE;
@@ -42,6 +46,7 @@ public class AxVouchersPlugin extends AxPlugin {
     @Override
     public void updateFlags() {
         FeatureFlags.PACKET_ENTITY_TRACKER_ENABLED.set(true);
+        FeatureFlags.ENABLE_PACKET_LISTENERS.set(true);
         FeatureFlags.DEBUG.set(true);
     }
 
@@ -97,25 +102,15 @@ public class AxVouchersPlugin extends AxPlugin {
     }
 
     private void loadLibraries() {
-        BukkitLibraryManager libraryManager = new BukkitLibraryManager(this);
-        libraryManager.addMavenCentral();
-        Library sqLite = Library.builder()
-                .groupId("org.xerial")
-                .artifactId("sqlite-jdbc")
-                .version("3.42.0.0")
-                .relocate("org{}sqlite", "com.artillexstudios.axvouchers.libs.sqlite")
-                .build();
-
-        Library h2 = Library.builder()
-                .groupId("com.h2database")
-                .artifactId("h2")
-                .version("2.2.220")
-                .relocate("org{}h2", "com.artillexstudios.axvouchers.libs.h2")
-                .build();
-
-        libraryManager.setLogLevel(LogLevel.DEBUG);
-        libraryManager.loadLibrary(sqLite);
-        libraryManager.loadLibrary(h2);
+        DependencyManager dependencyManager = new DependencyManager(
+                getDescription(),
+                new File(getDataFolder(), "libs"),
+                URLClassLoaderWrapper.wrap((URLClassLoader) getClassLoader())
+        );
+        dependencyManager.repository(MavenRepository.mavenCentral());
+        dependencyManager.dependency(new Dependency("org.xerial", "sqlite-jdbc", "3.42.0.0"));
+        dependencyManager.dependency(new Dependency("com.h2database", "h2", "2.2.220"));
+        dependencyManager.load();
     }
 
     @Override
@@ -128,7 +123,9 @@ public class AxVouchersPlugin extends AxPlugin {
 
     @Override
     public void disable() {
-        dataHandler.disable();
-        DataHandler.DATA_THREAD.stop();
+        if (dataHandler != null) {
+            dataHandler.disable();
+            DataHandler.DATA_THREAD.stop();
+        }
     }
 }

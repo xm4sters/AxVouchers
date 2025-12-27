@@ -10,23 +10,23 @@ repositories {
     mavenCentral()
 
     maven("https://repo.artillex-studios.com/releases/")
-    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+    maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
 }
 
 dependencies {
-    implementation("com.artillexstudios.axapi:axapi:1.4.259:all")
-    implementation("com.zaxxer:HikariCP:5.0.1")
-    implementation("dev.triumphteam:triumph-gui:3.1.7")
-    compileOnly("com.h2database:h2:2.2.220")
-    compileOnly("org.xerial:sqlite-jdbc:3.42.0.0")
-    compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
-    compileOnly("org.slf4j:slf4j-api:2.0.9")
-    compileOnly("commons-io:commons-io:2.15.0")
-    compileOnly("org.apache.commons:commons-text:1.11.0")
-    compileOnly("org.apache.commons:commons-math3:3.6.1")
-    compileOnly("me.clip:placeholderapi:2.11.5")
-    compileOnly("it.unimi.dsi:fastutil:8.5.13")
+    implementation("com.artillexstudios.axapi:axapi:1.4.830:all")
+    implementation("com.zaxxer:HikariCP:7.0.2")
+    implementation("dev.triumphteam:triumph-gui:3.1.13")
+    compileOnly("com.h2database:h2:2.4.240")
+    compileOnly("org.xerial:sqlite-jdbc:3.51.1.0")
+    compileOnly("io.papermc.paper:paper-api:1.20.4-R0.1-SNAPSHOT")
+    compileOnly("org.slf4j:slf4j-api:2.0.17")
+    implementation("commons-io:commons-io:2.21.0")
+    compileOnly("org.apache.commons:commons-text:1.15.0")
+    implementation("org.apache.commons:commons-math3:3.6.1")
+    compileOnly("me.clip:placeholderapi:2.11.7")
+    compileOnly("it.unimi.dsi:fastutil:8.5.18")
 }
 
 tasks {
@@ -38,8 +38,6 @@ tasks {
 
     shadowJar {
         relocate("com.artillexstudios.axapi", "com.artillexstudios.axvouchers.libs.axapi")
-        relocate("org.sqlite", "com.artillexstudios.axvouchers.libs.sqlite")
-        relocate("org.h2", "com.artillexstudios.axvouchers.libs.h2")
     }
 
     processResources {

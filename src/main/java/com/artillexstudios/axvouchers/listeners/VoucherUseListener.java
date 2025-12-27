@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
@@ -29,7 +30,7 @@ public class VoucherUseListener implements Listener {
     private static final UUID NIL_UUID = new UUID(0, 0);
     private static final Logger log = LoggerFactory.getLogger(VoucherUseListener.class);
     private static final HashMap<UUID, String> CONFIRM = new HashMap<>();
-    private static final Cooldown<UUID> COOLDOWN = new Cooldown<>();
+    private static final Cooldown<UUID> COOLDOWN = Cooldown.create();
 
     @EventHandler
     public void onPlayerInteractEvent(PlayerInteractEvent event) {
@@ -72,9 +73,10 @@ public class VoucherUseListener implements Listener {
             return;
         }
 
-        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId());
+        long remaining = COOLDOWN.getRemaining(event.getPlayer().getUniqueId());
         if (remaining > 0) {
-            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remaining))));
+            long remainingSeconds = TimeUnit.MILLISECONDS.toSeconds(remaining);
+            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remainingSeconds))));
             return;
         }
 
@@ -140,9 +142,10 @@ public class VoucherUseListener implements Listener {
 
         event.setCancelled(true);
 
-        long remaining = COOLDOWN.getRemainingAsSeconds(event.getPlayer().getUniqueId());
+        long remaining = COOLDOWN.getRemaining(event.getPlayer().getUniqueId());
         if (remaining > 0) {
-            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remaining))));
+            long remainingSeconds = TimeUnit.MILLISECONDS.toSeconds(remaining);
+            event.getPlayer().sendMessage(StringUtils.formatToString(Messages.PREFIX + Messages.COOLDOWN, Placeholder.parsed("time", String.valueOf(remainingSeconds))));
             return;
         }
 

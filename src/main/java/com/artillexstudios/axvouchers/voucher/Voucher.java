@@ -4,7 +4,7 @@ import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.items.component.DataComponent;
 import com.artillexstudios.axapi.items.component.DataComponents;
 import com.artillexstudios.axapi.items.nbt.CompoundTag;
-import com.artillexstudios.axapi.libs.boostedyaml.boostedyaml.block.implementation.Section;
+import com.artillexstudios.axapi.libs.boostedyaml.block.implementation.Section;
 import com.artillexstudios.axapi.utils.ItemBuilder;
 import com.artillexstudios.axapi.utils.StringUtils;
 import com.artillexstudios.axvouchers.actions.Actions;
@@ -55,7 +55,7 @@ public class Voucher {
     }
 
     public void reload() {
-        itemStack = new ItemBuilder(section.getSection("item")).setLore(List.of()).setName("").get();
+        itemStack = ItemBuilder.create(section.getSection("item")).setLore(List.of()).setName("").get();
         String name = section.getString("item.name");
         this.name = name == null ? this.name : StringUtils.format(name);
         this.lore = StringUtils.formatList(section.getStringList("item.lore", List.of()));
@@ -71,7 +71,7 @@ public class Voucher {
         items.clear();
         section.getOptionalMapList("items").ifPresent(list -> {
             for (Map<?, ?> map1 : list) {
-                items.put(map1.get("id").toString(), new ItemBuilder((Map<Object, Object>) map1).get());
+                items.put(map1.get("id").toString(), ItemBuilder.create((Map<Object, Object>) map1).get());
             }
         });
 
@@ -135,7 +135,7 @@ public class Voucher {
     }
 
     public ItemStack getForGUI() {
-        return new ItemBuilder(section.getSection("item")).get();
+        return ItemBuilder.create(section.getSection("item")).get();
     }
 
     public ItemStack getItemStack(int amount) {

@@ -4,8 +4,8 @@ import com.artillexstudios.axapi.items.PacketItemModifier;
 import com.artillexstudios.axapi.items.PacketItemModifierListener;
 import com.artillexstudios.axapi.items.WrappedItemStack;
 import com.artillexstudios.axapi.items.component.DataComponents;
-import com.artillexstudios.axapi.items.component.ItemLore;
-import com.artillexstudios.axapi.items.component.ProfileProperties;
+import com.artillexstudios.axapi.items.component.type.ItemLore;
+import com.artillexstudios.axapi.items.component.type.ProfileProperties;
 import com.artillexstudios.axapi.items.nbt.CompoundTag;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -86,8 +86,7 @@ public class VoucherItemModifier implements PacketItemModifierListener {
         }
 
         byte[] previous = tag.getByteArray("axvouchers-previous-state");
-
-        if (previous.length == 0) {
+        if (previous == null || previous.length == 0) {
             return;
         }
 

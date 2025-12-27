@@ -26,46 +26,45 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public void setup() {
+        closeDataSource();
+
         HikariConfig config = new HikariConfig();
-        config.setPoolName("axvouchers-pool");
+        config.setPoolName("axvouchers-mysql");
+        applyPoolSettings(config, Config.DATABASE_MAXIMUM_POOL_SIZE, Config.DATABASE_MINIMUM_IDLE);
 
-        config.setMaximumPoolSize(Config.DATABASE_MAXIMUM_POOL_SIZE);
-        config.setMinimumIdle(Config.DATABASE_MINIMUM_IDLE);
-        config.setMaxLifetime(Config.DATABASE_MAXIMUM_LIFETIME);
-        config.setKeepaliveTime(Config.DATABASE_KEEPALIVE_TIME);
-        config.setConnectionTimeout(Config.DATABASE_CONNECTION_TIMEOUT);
+        String jdbcUrl = "jdbc:mysql://" + Config.DATABASE_ADDRESS + ":" + Config.DATABASE_PORT + "/" +
+                Config.DATABASE_DATABASE + "?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=UTC";
+        config.setJdbcUrl(jdbcUrl);
+        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        config.setUsername(Config.DATABASE_USERNAME);
+        config.setPassword(Config.DATABASE_PASSWORD);
+        config.setConnectionTestQuery("SELECT 1");
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        config.addDataSourceProperty("useServerPrepStmts", "true");
 
-        config.setDriverClassName("com.mysql.jdbc.Driver");
-        config.setJdbcUrl("jdbc:mysql://" + Config.DATABASE_ADDRESS + ":" + Config.DATABASE_PORT + "/" + Config.DATABASE_DATABASE);
-        config.addDataSourceProperty("user", Config.DATABASE_USERNAME);
-        config.addDataSourceProperty("password", Config.DATABASE_PASSWORD);
-        dataSource = new HikariDataSource(config);
-
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `axvouchers_users`(`id` INT AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(16), `uuid` VARCHAR(36));")) {
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            log.error("An unexpected error occurred while setting up database!", exception);
+        dataSource = createDataSource(config);
+        if (!isReady()) {
             return;
         }
 
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `axvouchers_vouchers`(`uuid` VARCHAR(36) PRIMARY KEY, `amount` INT, `used` INT);")) {
-            statement.executeUpdate();
+        try (Connection connection = dataSource.getConnection()) {
+            createTables(connection);
         } catch (SQLException exception) {
             log.error("An unexpected error occurred while setting up database!", exception);
-            return;
-        }
-
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `axvouchers_logs`(`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` INT, `time` TIMESTAMP, `voucher_type` VARCHAR(128), `voucher_uuid` VARCHAR(36), `remove_reason` VARCHAR(256));")) {
-            statement.executeUpdate();
-        } catch (SQLException exception) {
-            log.error("An unexpected error occurred while setting up database!", exception);
-            return;
+            closeDataSource();
         }
     }
 
     @Override
     public void insertAntidupe(UUID uuid, int amount) {
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `axvouchers_vouchers`(`uuid`, `amount`, `used`) VALUES (?,?,?);")) {
+        if (!isReady()) {
+            return;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO `axvouchers_vouchers`(`uuid`, `amount`, `used`) VALUES (?,?,?);")) {
             statement.setString(1, uuid.toString());
             statement.setInt(2, amount);
             statement.setInt(3, 0);
@@ -77,7 +76,12 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public void incrementUsed(UUID uuid) {
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("UPDATE `axvouchers_vouchers` SET `used` = `used` + 1 WHERE `uuid` = ?;")) {
+        if (!isReady()) {
+            return;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("UPDATE `axvouchers_vouchers` SET `used` = `used` + 1 WHERE `uuid` = ?;")) {
             statement.setString(1, uuid.toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
@@ -87,13 +91,17 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public boolean isDuped(UUID uuid) {
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT `amount`, `used` FROM `axvouchers_vouchers` WHERE `uuid` = ?;")) {
+        if (!isReady()) {
+            return false;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT `amount`, `used` FROM `axvouchers_vouchers` WHERE `uuid` = ?;")) {
             statement.setString(1, uuid.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     int amount = resultSet.getInt("amount");
                     int used = resultSet.getInt("used");
-                    // database: uuid|10|10
                     return amount <= used;
                 }
             }
@@ -106,15 +114,20 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public void insertLog(Player player, Voucher voucher, UUID uuid, String removeReason) {
+        if (!isReady()) {
+            return;
+        }
+
         Pair<UUID, Integer> userId = getUserId(player.getName());
         if (userId == null) {
             return;
         }
 
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("INSERT INTO `axvouchers_logs`(`voucher_type`, `voucher_uuid`, `user_id`, `time`, `remove_reason`) VALUES (?,?,?,NOW(),?);")) {
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("INSERT INTO `axvouchers_logs`(`voucher_type`, `voucher_uuid`, `user_id`, `time`, `remove_reason`) VALUES (?,?,?,CURRENT_TIMESTAMP,?);")) {
             statement.setString(1, voucher.getId());
             statement.setString(2, uuid.toString());
-            statement.setInt(3, userId.getSecond());
+            statement.setInt(3, userId.second());
             statement.setString(4, removeReason);
             statement.executeUpdate();
         } catch (SQLException exception) {
@@ -124,15 +137,20 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public VoucherLog getLogs(String name) {
+        if (!isReady()) {
+            return null;
+        }
+
         Pair<UUID, Integer> userId = getUserId(name);
         if (userId == null) {
             return null;
         }
 
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM `axvouchers_logs` WHERE `user_id` = ?;")) {
-            statement.setInt(1, userId.getSecond());
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM `axvouchers_logs` WHERE `user_id` = ?;")) {
+            statement.setInt(1, userId.second());
             try (ResultSet resultSet = statement.executeQuery()) {
-                VoucherLog log = new VoucherLog(userId.getFirst(), name);
+                VoucherLog log = new VoucherLog(userId.first(), name);
                 while (resultSet.next()) {
                     int id = resultSet.getInt("id");
                     String type = resultSet.getString("voucher_type");
@@ -141,7 +159,6 @@ public class MySQLDataHandler implements DataHandler {
                     String removeReason = resultSet.getString("remove_reason");
                     log.add(new VoucherLog.Entry(id, type, time, voucherUUID, removeReason));
                 }
-
                 return log;
             }
         } catch (SQLException exception) {
@@ -152,26 +169,31 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public Pair<UUID, Integer> getUserId(String name) {
-        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement("SELECT * FROM `axvouchers_users` WHERE `name` = ?;")) {
+        if (!isReady()) {
+            return null;
+        }
+
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM `axvouchers_users` WHERE `name` = ?;")) {
             statement.setString(1, name);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     return Pair.of(UUID.fromString(resultSet.getString("uuid")), resultSet.getInt("id"));
-                } else {
-                    Player player = Bukkit.getPlayer(name);
-                    if (player == null) {
-                        return null;
-                    }
+                }
+            }
 
-                    try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO `axvouchers_users`(`uuid`, `name`) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS)) {
-                        insertStatement.setString(1, player.getUniqueId().toString());
-                        insertStatement.setString(2, name);
-                        insertStatement.executeUpdate();
-                        try (ResultSet generated = insertStatement.getGeneratedKeys()) {
-                            if (generated.next()) {
-                                return Pair.of(player.getUniqueId(), generated.getInt(1));
-                            }
-                        }
+            Player player = Bukkit.getPlayer(name);
+            if (player == null) {
+                return null;
+            }
+
+            try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO `axvouchers_users`(`uuid`, `name`) VALUES (?,?)", Statement.RETURN_GENERATED_KEYS)) {
+                insertStatement.setString(1, player.getUniqueId().toString());
+                insertStatement.setString(2, name);
+                insertStatement.executeUpdate();
+                try (ResultSet generated = insertStatement.getGeneratedKeys()) {
+                    if (generated.next()) {
+                        return Pair.of(player.getUniqueId(), generated.getInt(1));
                     }
                 }
             }
@@ -184,6 +206,48 @@ public class MySQLDataHandler implements DataHandler {
 
     @Override
     public void disable() {
-        dataSource.close();
+        closeDataSource();
+    }
+
+    private void createTables(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `axvouchers_users`(`id` INT AUTO_INCREMENT PRIMARY KEY, `name` VARCHAR(16), `uuid` VARCHAR(36));")) {
+            statement.executeUpdate();
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `axvouchers_vouchers`(`uuid` VARCHAR(36) PRIMARY KEY, `amount` INT, `used` INT);")) {
+            statement.executeUpdate();
+        }
+
+        try (PreparedStatement statement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS `axvouchers_logs`(`id` INT AUTO_INCREMENT PRIMARY KEY, `user_id` INT, `time` TIMESTAMP, `voucher_type` VARCHAR(128), `voucher_uuid` VARCHAR(36), `remove_reason` VARCHAR(256));")) {
+            statement.executeUpdate();
+        }
+    }
+
+    private void applyPoolSettings(HikariConfig config, int maxPoolSize, int minIdle) {
+        config.setMaximumPoolSize(maxPoolSize);
+        config.setMinimumIdle(minIdle);
+        config.setMaxLifetime(Config.DATABASE_MAXIMUM_LIFETIME);
+        config.setKeepaliveTime(Config.DATABASE_KEEPALIVE_TIME);
+        config.setConnectionTimeout(Config.DATABASE_CONNECTION_TIMEOUT);
+    }
+
+    private HikariDataSource createDataSource(HikariConfig config) {
+        try {
+            return new HikariDataSource(config);
+        } catch (RuntimeException exception) {
+            log.error("An unexpected error occurred while setting up database!", exception);
+            return null;
+        }
+    }
+
+    private void closeDataSource() {
+        if (dataSource != null) {
+            dataSource.close();
+            dataSource = null;
+        }
+    }
+
+    private boolean isReady() {
+        return dataSource != null && !dataSource.isClosed();
     }
 }
